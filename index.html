@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reseller Dashboard - Cloud Database</title>
+    <title>Reseller Dashboard - Supabase Cloud</title>
     <style>
         * {
             margin: 0;
@@ -39,12 +39,6 @@
         .header h1 {
             color: #333;
             font-size: 24px;
-        }
-
-        .db-status {
-            display: flex;
-            align-items: center;
-            gap: 10px;
         }
 
         .status-badge {
@@ -170,10 +164,6 @@
             background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
         }
 
-        .btn-warning {
-            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
-        }
-
         .btn-supabase {
             background: linear-gradient(135deg, #3ecf8e 0%, #1c8c4c 100%);
         }
@@ -251,33 +241,6 @@
             }
         }
 
-        .setup-card {
-            background: linear-gradient(135deg, #3ecf8e 0%, #1c8c4c 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-        }
-
-        .setup-card input {
-            width: 70%;
-            padding: 10px;
-            margin-right: 10px;
-            border: none;
-            border-radius: 5px;
-            color: #333;
-        }
-
-        .buyer-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 10px;
-            cursor: pointer;
-            transition: transform 0.3s;
-        }
-
         .progress-bar {
             width: 100%;
             height: 30px;
@@ -306,6 +269,20 @@
             border-radius: 20px;
             font-size: 12px;
             font-weight: bold;
+        }
+
+        .buyer-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .buyer-card:hover {
+            transform: translateX(5px);
         }
 
         .modal {
@@ -337,32 +314,18 @@
             font-size: 24px;
             color: #999;
         }
+
+        .close:hover {
+            color: #333;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>📊 Reseller Dashboard - Cloud Database</h1>
-            <div class="db-status">
-                <div id="dbStatusBadge" class="status-badge status-offline">⚫ Offline</div>
-                <button onclick="testConnection()" class="btn-supabase">🔌 Test Koneksi</button>
-            </div>
-        </div>
-
-        <!-- Setup Supabase -->
-        <div class="setup-card" id="setupCard">
-            <h3>☁️ Koneksikan ke Supabase (Database Cloud)</h3>
-            <p style="margin: 10px 0;">Data akan tersimpan di cloud, bisa diakses dari mana saja dan TIDAK AKAN HILANG!</p>
-            <ol style="margin: 10px 0 10px 20px;">
-                <li>Daftar di <a href="https://supabase.com" target="_blank" style="color: white;">Supabase.com</a> (gratis)</li>
-                <li>Buat project dan copy URL & anon key</li>
-                <li>Paste di bawah dan klik Connect</li>
-            </ol>
             <div>
-                <input type="text" id="supabaseUrl" placeholder="Supabase URL (https://xxxxx.supabase.co)" style="width: 45%;">
-                <input type="text" id="supabaseKey" placeholder="Supabase Anon Public Key" style="width: 45%;">
-                <button onclick="connectSupabase()" class="btn-supabase">🚀 Connect ke Supabase</button>
-                <button onclick="skipSupabase()" style="background: #666;">Atau pakai Local Storage</button>
+                <span id="dbStatus" class="status-badge status-connecting">🟡 Connecting...</span>
             </div>
         </div>
 
@@ -393,19 +356,19 @@
                 <form id="transactionForm">
                     <div class="form-group">
                         <label>Harga Beli (Modal)</label>
-                        <input type="number" id="hargaBeli" required>
+                        <input type="number" id="hargaBeli" required placeholder="Masukkan harga beli">
                     </div>
                     <div class="form-group">
                         <label>Harga Jual</label>
-                        <input type="number" id="hargaJual" required>
+                        <input type="number" id="hargaJual" required placeholder="Masukkan harga jual">
                     </div>
                     <div class="form-group">
                         <label>Jenis Aplikasi</label>
-                        <input type="text" id="jenisApp" required>
+                        <input type="text" id="jenisApp" required placeholder="Contoh: Pro, Basic, Premium">
                     </div>
                     <div class="form-group">
                         <label>Nama Pembeli</label>
-                        <input type="text" id="namaPembeli" required>
+                        <input type="text" id="namaPembeli" required placeholder="Nama lengkap pembeli">
                     </div>
                     <div class="form-group">
                         <label>WhatsApp Pembeli</label>
@@ -413,7 +376,9 @@
                     </div>
                     <div class="form-group">
                         <label>Supplier</label>
-                        <select id="supplier" required></select>
+                        <select id="supplier" required>
+                            <option value="">Pilih Supplier</option>
+                        </select>
                     </div>
                     <button type="submit">Simpan Transaksi</button>
                 </form>
@@ -424,19 +389,22 @@
                 <form id="supplierForm">
                     <div class="form-group">
                         <label>Nama Supplier</label>
-                        <input type="text" id="namaSupplier" required>
+                        <input type="text" id="namaSupplier" required placeholder="Nama supplier">
                     </div>
                     <div class="form-group">
                         <label>Kontak</label>
-                        <input type="text" id="kontakSupplier">
+                        <input type="text" id="kontakSupplier" placeholder="Nomor telepon">
                     </div>
                     <div class="form-group">
                         <label>Alamat</label>
-                        <textarea id="alamatSupplier" rows="2"></textarea>
+                        <textarea id="alamatSupplier" rows="2" placeholder="Alamat supplier"></textarea>
                     </div>
                     <button type="submit">Tambah Supplier</button>
                 </form>
-                <div id="supplierList"></div>
+                <div style="margin-top: 15px;">
+                    <h4>📋 Daftar Supplier:</h4>
+                    <div id="supplierList"></div>
+                </div>
             </div>
 
             <div class="form-section">
@@ -444,6 +412,7 @@
                 <div style="background: #f0f0f0; padding: 10px; border-radius: 10px; margin-bottom: 15px;">
                     <p><strong>🎁 Setiap 100 Transaksi = Dapat Hadiah!</strong></p>
                     <p>💰 Bonus: Rp 50.000 per 100 transaksi</p>
+                    <p>⭐ Poin: 1 poin per transaksi</p>
                 </div>
                 <div id="topBuyers"></div>
             </div>
@@ -454,8 +423,7 @@
             <h2>📊 Rekap Transaksi per Pembeli</h2>
             <div style="margin-bottom: 15px;">
                 <input type="text" id="searchBuyer" placeholder="🔍 Cari pembeli..." onkeyup="searchBuyers()" style="width: 300px;">
-                <button onclick="syncFromCloud()" class="btn-success">🔄 Sync dari Cloud</button>
-                <button onclick="syncToCloud()" class="btn-supabase">☁️ Backup ke Cloud</button>
+                <button onclick="refreshData()" class="btn-success">🔄 Refresh Data</button>
             </div>
             <div id="buyerRecap"></div>
         </div>
@@ -469,62 +437,58 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
+        // ============ SUPABASE CONFIG (LANGSUNG TERISI) ============
+        const SUPABASE_URL = 'https://mmlnbtwhadtywkgbhysf.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tbG5idHdoYWR0eXdrZ2JoeXNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MTY3NTIsImV4cCI6MjA5MzI5Mjc1Mn0.Kl3VSOFrLzuw5GC9JbhIRqVrb2M4xMI2zf3RoogUGbE';
+        
         let supabase = null;
-        let useCloud = false;
+        let isConnected = false;
         let transactions = [];
         let suppliers = [];
         let buyerRewards = {};
 
-        // Connect to Supabase
-        async function connectSupabase() {
-            const url = document.getElementById('supabaseUrl').value;
-            const key = document.getElementById('supabaseKey').value;
-            
-            if (!url || !key) {
-                showAlert('Masukkan URL dan Key Supabase!', 'error');
-                return;
-            }
-            
-            document.getElementById('dbStatusBadge').className = 'status-badge status-connecting';
-            document.getElementById('dbStatusBadge').innerHTML = '🟡 Connecting...';
-            
+        // ============ AUTO CONNECT KE SUPABASE ============
+        async function initSupabase() {
             try {
-                supabase = window.supabase.createClient(url, key);
-                const { data, error } = await supabase.from('suppliers').select('count');
+                document.getElementById('dbStatus').className = 'status-badge status-connecting';
+                document.getElementById('dbStatus').innerHTML = '🟡 Connecting...';
                 
-                if (error) throw error;
+                // Inisialisasi Supabase
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 
-                useCloud = true;
-                localStorage.setItem('supabaseUrl', url);
-                localStorage.setItem('supabaseKey', key);
-                document.getElementById('setupCard').style.display = 'none';
-                document.getElementById('dbStatusBadge').className = 'status-badge status-online';
-                document.getElementById('dbStatusBadge').innerHTML = '🟢 Cloud Active';
+                // Test koneksi dengan cek tabel suppliers
+                const { data, error } = await supabase
+                    .from('suppliers')
+                    .select('count', { count: 'exact', head: true });
                 
-                showAlert('Berhasil terhubung ke Supabase! Data akan disimpan di cloud', 'success');
+                if (error) {
+                    console.error('Supabase error:', error);
+                    throw new Error(error.message);
+                }
                 
-                // Load data from cloud
-                await loadFromCloud();
+                isConnected = true;
+                document.getElementById('dbStatus').className = 'status-badge status-online';
+                document.getElementById('dbStatus').innerHTML = '🟢 Cloud Active';
+                
+                showAlert('✅ Berhasil terhubung ke Supabase Cloud!', 'success');
+                
+                // Load data dari cloud
+                await loadAllData();
                 
             } catch (error) {
-                showAlert('Gagal konek: ' + error.message, 'error');
-                document.getElementById('dbStatusBadge').className = 'status-badge status-offline';
-                document.getElementById('dbStatusBadge').innerHTML = '⚫ Offline';
-                useCloud = false;
+                console.error('Connection failed:', error);
+                document.getElementById('dbStatus').className = 'status-badge status-offline';
+                document.getElementById('dbStatus').innerHTML = '⚫ Offline - Pakai Local';
+                showAlert('❌ Gagal konek ke Supabase: ' + error.message + '. Menggunakan penyimpanan lokal.', 'error');
+                
+                // Fallback ke local storage
+                loadFromLocal();
             }
         }
 
-        function skipSupabase() {
-            document.getElementById('setupCard').style.display = 'none';
-            showAlert('Menggunakan penyimpanan lokal (Local Storage)', 'info');
-            loadLocalData();
-        }
-
-        // Load from cloud
-        async function loadFromCloud() {
-            if (!supabase) return;
-            
-            showAlert('Mengambil data dari cloud...', 'info');
+        // ============ LOAD DATA DARI CLOUD ============
+        async function loadAllData() {
+            if (!supabase || !isConnected) return;
             
             try {
                 // Load transactions
@@ -544,13 +508,26 @@
                 if (supError) throw supError;
                 suppliers = supData || [];
                 
-                // Load rewards
+                // Jika supplier kosong, tambah sample
+                if (suppliers.length === 0) {
+                    const sampleSuppliers = [
+                        { id: 1, nama: "PT Software Solutions", kontak: "08123456789", alamat: "Jakarta" },
+                        { id: 2, nama: "CV Digital Creative", kontak: "08198765432", alamat: "Bandung" }
+                    ];
+                    for (const sup of sampleSuppliers) {
+                        const { error } = await supabase.from('suppliers').upsert(sup);
+                        if (!error) suppliers.push(sup);
+                    }
+                }
+                
+                // Load buyer rewards
                 const { data: rewData, error: rewError } = await supabase
                     .from('buyer_rewards')
                     .select('*');
                 
                 if (rewError) throw rewError;
                 
+                buyerRewards = {};
                 if (rewData) {
                     rewData.forEach(r => {
                         buyerRewards[r.identifier] = {
@@ -564,112 +541,166 @@
                     });
                 }
                 
+                // Update UI
                 updateUI();
-                showAlert('Data berhasil dimuat dari cloud!', 'success');
+                showAlert(`✅ Load ${transactions.length} transaksi, ${suppliers.length} supplier`, 'success');
                 
             } catch (error) {
-                showAlert('Error load dari cloud: ' + error.message, 'error');
-                loadLocalData();
+                console.error('Load error:', error);
+                showAlert('Error load data: ' + error.message, 'error');
+                loadFromLocal();
             }
         }
 
-        // Sync to cloud
-        async function syncToCloud() {
-            if (!supabase) {
-                showAlert('Belum terhubung ke Supabase!', 'error');
-                return;
+        // ============ SIMPAN DATA KE CLOUD ============
+        async function saveTransaction(transaction) {
+            if (!supabase || !isConnected) {
+                transactions.unshift(transaction);
+                saveToLocal();
+                updateUI();
+                return true;
             }
-            
-            showAlert('Menyimpan ke cloud...', 'info');
             
             try {
-                // Sync transactions
-                for (const trans of transactions) {
-                    const { error } = await supabase
-                        .from('transactions')
-                        .upsert(trans, { onConflict: 'id' });
-                    if (error) throw error;
-                }
+                const { error } = await supabase
+                    .from('transactions')
+                    .insert(transaction);
                 
-                // Sync suppliers
-                for (const sup of suppliers) {
-                    const { error } = await supabase
-                        .from('suppliers')
-                        .upsert(sup, { onConflict: 'id' });
-                    if (error) throw error;
-                }
+                if (error) throw error;
                 
-                // Sync rewards
-                for (const [identifier, reward] of Object.entries(buyerRewards)) {
-                    const { error } = await supabase
-                        .from('buyer_rewards')
-                        .upsert({
-                            id: Date.now(),
-                            identifier: identifier,
-                            nama: reward.nama,
-                            wa: reward.wa,
-                            total_transaksi: reward.totalTransaksi,
-                            hadiah_diberikan: reward.hadiahDiberikan,
-                            poin: reward.poin,
-                            reward_history: reward.rewardHistory
-                        }, { onConflict: 'identifier' });
-                    if (error) throw error;
-                }
-                
-                showAlert('Data berhasil disimpan ke cloud!', 'success');
+                transactions.unshift(transaction);
+                updateUI();
+                showAlert('Transaksi tersimpan di cloud!', 'success');
+                return true;
                 
             } catch (error) {
-                showAlert('Error sync ke cloud: ' + error.message, 'error');
+                console.error('Save error:', error);
+                showAlert('Gagal simpan: ' + error.message, 'error');
+                return false;
             }
         }
 
-        async function syncFromCloud() {
-            await loadFromCloud();
-        }
-
-        async function testConnection() {
-            if (!supabase) {
-                showAlert('Belum setup Supabase', 'error');
-                return;
+        async function saveSupplier(supplier) {
+            if (!supabase || !isConnected) {
+                suppliers.push(supplier);
+                saveToLocal();
+                updateUI();
+                return true;
             }
             
-            const { data, error } = await supabase.from('suppliers').select('count', { count: 'exact', head: true });
-            if (error) {
-                showAlert('Koneksi gagal: ' + error.message, 'error');
-            } else {
-                showAlert('Koneksi OK! Database terhubung', 'success');
+            try {
+                const { error } = await supabase
+                    .from('suppliers')
+                    .insert(supplier);
+                
+                if (error) throw error;
+                
+                suppliers.push(supplier);
+                updateUI();
+                showAlert('Supplier tersimpan di cloud!', 'success');
+                return true;
+                
+            } catch (error) {
+                showAlert('Gagal simpan supplier: ' + error.message, 'error');
+                return false;
             }
         }
 
-        // Local storage fallback
-        function loadLocalData() {
-            const savedTransactions = localStorage.getItem('transactions');
-            const savedSuppliers = localStorage.getItem('suppliers');
-            const savedRewards = localStorage.getItem('buyerRewards');
+        async function saveReward(identifier, reward) {
+            if (!supabase || !isConnected) {
+                buyerRewards[identifier] = reward;
+                saveToLocal();
+                return true;
+            }
             
-            transactions = savedTransactions ? JSON.parse(savedTransactions) : [];
-            suppliers = savedSuppliers ? JSON.parse(savedSuppliers) : [
-                { id: 1, nama: "PT Software Solutions", kontak: "08123456789", alamat: "Jakarta" },
-                { id: 2, nama: "CV Digital Creative", kontak: "08198765432", alamat: "Bandung" }
-            ];
-            buyerRewards = savedRewards ? JSON.parse(savedRewards) : {};
-            
-            updateUI();
+            try {
+                const { error } = await supabase
+                    .from('buyer_rewards')
+                    .upsert({
+                        identifier: identifier,
+                        nama: reward.nama,
+                        wa: reward.wa,
+                        total_transaksi: reward.totalTransaksi,
+                        hadiah_diberikan: reward.hadiahDiberikan,
+                        poin: reward.poin,
+                        reward_history: reward.rewardHistory
+                    });
+                
+                if (error) throw error;
+                
+                buyerRewards[identifier] = reward;
+                return true;
+                
+            } catch (error) {
+                console.error('Save reward error:', error);
+                return false;
+            }
         }
 
+        async function deleteTransactionFromCloud(id) {
+            if (!supabase || !isConnected) {
+                const index = transactions.findIndex(t => t.id === id);
+                if (index !== -1) transactions.splice(index, 1);
+                saveToLocal();
+                updateUI();
+                return true;
+            }
+            
+            try {
+                const { error } = await supabase
+                    .from('transactions')
+                    .delete()
+                    .eq('id', id);
+                
+                if (error) throw error;
+                
+                transactions = transactions.filter(t => t.id !== id);
+                updateUI();
+                showAlert('Transaksi dihapus dari cloud', 'success');
+                return true;
+                
+            } catch (error) {
+                showAlert('Gagal hapus: ' + error.message, 'error');
+                return false;
+            }
+        }
+
+        // ============ LOCAL STORAGE FALLBACK ============
         function saveToLocal() {
             localStorage.setItem('transactions', JSON.stringify(transactions));
             localStorage.setItem('suppliers', JSON.stringify(suppliers));
             localStorage.setItem('buyerRewards', JSON.stringify(buyerRewards));
         }
 
-        async function saveData() {
-            saveToLocal();
-            if (useCloud && supabase) {
-                await syncToCloud();
+        function loadFromLocal() {
+            const savedTransactions = localStorage.getItem('transactions');
+            const savedSuppliers = localStorage.getItem('suppliers');
+            const savedRewards = localStorage.getItem('buyerRewards');
+            
+            transactions = savedTransactions ? JSON.parse(savedTransactions) : [];
+            suppliers = savedSuppliers ? JSON.parse(savedSuppliers) : [];
+            buyerRewards = savedRewards ? JSON.parse(savedRewards) : {};
+            
+            if (suppliers.length === 0) {
+                suppliers = [
+                    { id: 1, nama: "PT Software Solutions", kontak: "08123456789", alamat: "Jakarta" },
+                    { id: 2, nama: "CV Digital Creative", kontak: "08198765432", alamat: "Bandung" }
+                ];
+            }
+            
+            updateUI();
+            showAlert(`📱 Mode Local: ${transactions.length} transaksi`, 'info');
+        }
+
+        function refreshData() {
+            if (isConnected && supabase) {
+                loadAllData();
+            } else {
+                loadFromLocal();
             }
         }
 
+        // ============ UPDATE UI ============
         function updateUI() {
             updateSupplierSelect();
             renderSupplierList();
@@ -679,7 +710,7 @@
             updateTopBuyers();
         }
 
-        function showAlert(message, type = 'success') {
+        function showAlert(message, type) {
             const alert = document.createElement('div');
             alert.className = `alert alert-${type}`;
             alert.textContent = message;
@@ -687,7 +718,6 @@
             setTimeout(() => alert.remove(), 3000);
         }
 
-        // Check and give reward
         async function checkAndGiveReward(namaPembeli, waNumber, transactionCount) {
             const identifier = waNumber || namaPembeli;
             
@@ -719,10 +749,9 @@
                         hadiah: `Rp ${rewardAmount.toLocaleString('id-ID')}`,
                         status: 'Diberikan'
                     });
-                    
-                    showAlert(`🎉 SELAMAT! ${namaPembeli} mendapat hadiah Rp ${rewardAmount.toLocaleString('id-ID')} (${transactionCount} transaksi)`, 'success');
+                    showAlert(`🎉 SELAMAT! ${namaPembeli} mendapat hadiah Rp ${rewardAmount.toLocaleString('id-ID')} (${transactionCount} transaksi)!`, 'success');
                 }
-                await saveData();
+                await saveReward(identifier, buyerRewards[identifier]);
             }
         }
 
@@ -750,26 +779,23 @@
             return Array.from(buyerMap.values()).sort((a, b) => b.totalTransaksi - a.totalTransaksi);
         }
 
-        function renderBuyerRecap(filter = 'all', search = '') {
+        function renderBuyerRecap() {
             const buyers = getBuyerTransactions();
             const container = document.getElementById('buyerRecap');
+            const search = document.getElementById('searchBuyer').value.toLowerCase();
             
-            let filteredBuyers = buyers;
-            if (filter === 'eligible') filteredBuyers = buyers.filter(b => b.totalTransaksi >= 100);
-            if (search) filteredBuyers = buyers.filter(b => b.nama.toLowerCase().includes(search.toLowerCase()));
+            let filtered = buyers.filter(b => b.nama.toLowerCase().includes(search));
             
-            if (filteredBuyers.length === 0) {
+            if (filtered.length === 0) {
                 container.innerHTML = '<p style="text-align: center; padding: 20px;">Belum ada data pembeli</p>';
                 return;
             }
             
-            let html = `<table><thead><tr>
-                <th>No</th><th>Nama</th><th>WA</th><th>Transaksi</th><th>Total Belanja</th><th>Progress</th><th>Status</th>
-            </tr></thead><tbody>`;
+            let html = `<tr><thead><tr><th>No</th><th>Nama</th><th>WA</th><th>Transaksi</th><th>Total Belanja</th><th>Progress</th><th>Status</th></tr></thead><tbody>`;
             
-            filteredBuyers.forEach((buyer, index) => {
-                const progress = (buyer.totalTransaksi % 100);
-                const progressPercent = (progress / 100) * 100;
+            filtered.forEach((buyer, index) => {
+                const progress = buyer.totalTransaksi % 100;
+                const percent = (progress / 100) * 100;
                 const isEligible = buyer.totalTransaksi >= 100;
                 
                 html += `<tr>
@@ -778,9 +804,7 @@
                     <td>${buyer.wa}</td>
                     <td><strong>${buyer.totalTransaksi}</strong> x</td>
                     <td>${formatRupiah(buyer.totalNominal)}</td>
-                    <td style="min-width: 150px;">
-                        <div class="progress-bar"><div class="progress-fill" style="width: ${progressPercent}%">${progress}/100</div></div>
-                    </td>
+                    <td style="min-width: 150px;"><div class="progress-bar"><div class="progress-fill" style="width: ${percent}%">${progress}/100</div></div></td>
                     <td>${isEligible ? '<span class="badge-gold">🏆 Berhak Hadiah</span>' : 'Menuju 100'}</td>
                 </tr>`;
             });
@@ -795,11 +819,11 @@
             const container = document.getElementById('topBuyers');
             
             if (top3.length === 0) {
-                container.innerHTML = '<p>Belum ada data</p>';
+                container.innerHTML = '<p>Belum ada data pembeli</p>';
                 return;
             }
             
-            let html = '<h4>🏆 Top 3 Pembeli</h4>';
+            let html = '<h4>🏆 Top 3 Pembeli Terbanyak</h4>';
             top3.forEach((buyer, index) => {
                 const medals = ['🥇', '🥈', '🥉'];
                 html += `<div class="buyer-card">${medals[index]} <strong>${buyer.nama}</strong><br>📦 ${buyer.totalTransaksi} transaksi<br>💰 ${formatRupiah(buyer.totalNominal)}</div>`;
@@ -811,7 +835,7 @@
             const select = document.getElementById('supplier');
             select.innerHTML = '<option value="">Pilih Supplier</option>';
             suppliers.forEach(supplier => {
-                select.innerHTML += `<option value="${supplier.id}">${supplier.nama} - ${supplier.kontak || 'No kontak'}</option>`;
+                select.innerHTML += `<option value="${supplier.id}">${supplier.nama} - ${supplier.kontak || '-'}</option>`;
             });
         }
 
@@ -821,8 +845,8 @@
                 container.innerHTML = '<p>Belum ada supplier</p>';
                 return;
             }
-            let html = '<ul style="list-style: none;">';
-            suppliers.forEach(s => html += `<li>📌 ${s.nama} - ${s.kontak || '-'}</li>`);
+            let html = '<ul style="list-style: none; padding-left: 0;">';
+            suppliers.forEach(s => html += `<li style="padding: 5px 0;">📌 ${s.nama} - ${s.kontak || '-'}</li>`);
             html += '</ul>';
             container.innerHTML = html;
         }
@@ -854,8 +878,9 @@
                 <th>Tanggal</th><th>Pembeli</th><th>WA</th><th>Harga Beli</th><th>Harga Jual</th><th>Keuntungan</th><th>Jenis App</th><th>Supplier</th><th>Aksi</th>
             </tr></thead><tbody>`;
             
-            transactions.forEach((t, index) => {
+            transactions.forEach((t) => {
                 const profit = t.harga_jual - t.harga_beli;
+                const supplier = suppliers.find(s => s.id == t.supplier_id);
                 html += `<tr>
                     <td>${new Date(t.tanggal).toLocaleDateString('id-ID')}</td>
                     <td>${t.nama_pembeli}</td>
@@ -864,8 +889,8 @@
                     <td>${formatRupiah(t.harga_jual)}</td>
                     <td style="color: ${profit >= 0 ? '#4caf50' : '#f44336'}">${formatRupiah(profit)}</td>
                     <td>${t.jenis_app}</td>
-                    <td>${suppliers.find(s => s.id == t.supplier_id)?.nama || '-'}</td>
-                    <td><button onclick="deleteTransaction(${t.id})" style="background:#f44336;padding:5px 10px;">🗑️ Hapus</button></td>
+                    <td>${supplier?.nama || '-'}</td>
+                    <td><button onclick="deleteTrans(${t.id})" style="background:#f44336;padding:5px 10px;border:none;border-radius:5px;color:white;cursor:pointer;">🗑️ Hapus</button></td>
                 </tr>`;
             });
             
@@ -873,25 +898,25 @@
             container.innerHTML = html;
         }
 
-        async function deleteTransaction(id) {
+        async function deleteTrans(id) {
             if (confirm('Yakin ingin menghapus transaksi ini?')) {
-                const index = transactions.findIndex(t => t.id === id);
-                if (index !== -1) {
-                    transactions.splice(index, 1);
-                    await saveData();
-                    updateUI();
-                    showAlert('Transaksi berhasil dihapus!', 'success');
-                }
+                await deleteTransactionFromCloud(id);
             }
         }
 
         function searchBuyers() {
-            renderBuyerRecap('all', document.getElementById('searchBuyer').value);
+            renderBuyerRecap();
         }
 
-        // Form handlers
+        // ============ FORM HANDLERS ============
         document.getElementById('transactionForm').addEventListener('submit', async function(e) {
             e.preventDefault();
+            
+            const supplierId = document.getElementById('supplier').value;
+            if (!supplierId) {
+                showAlert('Pilih supplier terlebih dahulu!', 'error');
+                return;
+            }
             
             const transaction = {
                 id: Date.now(),
@@ -901,47 +926,35 @@
                 jenis_app: document.getElementById('jenisApp').value,
                 nama_pembeli: document.getElementById('namaPembeli').value,
                 wa_pembeli: document.getElementById('waPembeli').value || null,
-                supplier_id: parseInt(document.getElementById('supplier').value)
+                supplier_id: parseInt(supplierId)
             };
             
-            transactions.unshift(transaction);
-            
             const identifier = transaction.wa_pembeli || transaction.nama_pembeli;
-            const buyerCount = transactions.filter(t => (t.wa_pembeli || t.nama_pembeli) === identifier).length;
-            await checkAndGiveReward(transaction.nama_pembeli, transaction.wa_pembeli, buyerCount);
+            const buyerCount = transactions.filter(t => (t.wa_pembeli || t.nama_pembeli) === identifier).length + 1;
             
-            await saveData();
-            updateUI();
-            this.reset();
-            showAlert('Transaksi berhasil ditambahkan!', 'success');
+            const success = await saveTransaction(transaction);
+            if (success) {
+                await checkAndGiveReward(transaction.nama_pembeli, transaction.wa_pembeli, buyerCount);
+                this.reset();
+            }
         });
         
         document.getElementById('supplierForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            suppliers.push({
+            const supplier = {
                 id: Date.now(),
                 nama: document.getElementById('namaSupplier').value,
                 kontak: document.getElementById('kontakSupplier').value,
                 alamat: document.getElementById('alamatSupplier').value
-            });
+            };
             
-            await saveData();
-            updateUI();
+            await saveSupplier(supplier);
             this.reset();
-            showAlert('Supplier berhasil ditambahkan!', 'success');
         });
         
-        // Load saved Supabase config
-        const savedUrl = localStorage.getItem('supabaseUrl');
-        const savedKey = localStorage.getItem('supabaseKey');
-        if (savedUrl && savedKey) {
-            document.getElementById('supabaseUrl').value = savedUrl;
-            document.getElementById('supabaseKey').value = savedKey;
-            connectSupabase();
-        } else {
-            loadLocalData();
-        }
+        // ============ START ============
+        initSupabase();
     </script>
 </body>
 </html>
