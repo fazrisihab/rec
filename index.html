@@ -284,40 +284,6 @@
         .buyer-card:hover {
             transform: translateX(5px);
         }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1001;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            max-width: 500px;
-            width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-
-        .close {
-            float: right;
-            cursor: pointer;
-            font-size: 24px;
-            color: #999;
-        }
-
-        .close:hover {
-            color: #333;
-        }
     </style>
 </head>
 <body>
@@ -437,11 +403,11 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // ============ SUPABASE CONFIG (LANGSUNG TERISI) ============
+        // ============ SUPABASE CONFIG ============
         const SUPABASE_URL = 'https://mmlnbtwhadtywkgbhysf.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tbG5idHdoYWR0eXdrZ2JoeXNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MTY3NTIsImV4cCI6MjA5MzI5Mjc1Mn0.Kl3VSOFrLzuw5GC9JbhIRqVrb2M4xMI2zf3RoogUGbE';
         
-        let supabase = null;
+        let supabaseClient = null;
         let isConnected = false;
         let transactions = [];
         let suppliers = [];
@@ -454,10 +420,10 @@
                 document.getElementById('dbStatus').innerHTML = '🟡 Connecting...';
                 
                 // Inisialisasi Supabase
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 
                 // Test koneksi dengan cek tabel suppliers
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('suppliers')
                     .select('count', { count: 'exact', head: true });
                 
@@ -479,7 +445,7 @@
                 console.error('Connection failed:', error);
                 document.getElementById('dbStatus').className = 'status-badge status-offline';
                 document.getElementById('dbStatus').innerHTML = '⚫ Offline - Pakai Local';
-                showAlert('❌ Gagal konek ke Supabase: ' + error.message + '. Menggunakan penyimpanan lokal.', 'error');
+                showAlert('❌ Gagal konek: ' + error.message + '. Menggunakan penyimpanan lokal.', 'error');
                 
                 // Fallback ke local storage
                 loadFromLocal();
@@ -488,11 +454,11 @@
 
         // ============ LOAD DATA DARI CLOUD ============
         async function loadAllData() {
-            if (!supabase || !isConnected) return;
+            if (!supabaseClient || !isConnected) return;
             
             try {
                 // Load transactions
-                const { data: transData, error: transError } = await supabase
+                const { data: transData, error: transError } = await supabaseClient
                     .from('transactions')
                     .select('*')
                     .order('tanggal', { ascending: false });
@@ -501,7 +467,7 @@
                 transactions = transData || [];
                 
                 // Load suppliers
-                const { data: supData, error: supError } = await supabase
+                const { data: supData, error: supError } = await supabaseClient
                     .from('suppliers')
                     .select('*');
                 
@@ -515,13 +481,13 @@
                         { id: 2, nama: "CV Digital Creative", kontak: "08198765432", alamat: "Bandung" }
                     ];
                     for (const sup of sampleSuppliers) {
-                        const { error } = await supabase.from('suppliers').upsert(sup);
+                        const { error } = await supabaseClient.from('suppliers').upsert(sup);
                         if (!error) suppliers.push(sup);
                     }
                 }
                 
                 // Load buyer rewards
-                const { data: rewData, error: rewError } = await supabase
+                const { data: rewData, error: rewError } = await supabaseClient
                     .from('buyer_rewards')
                     .select('*');
                 
@@ -554,7 +520,7 @@
 
         // ============ SIMPAN DATA KE CLOUD ============
         async function saveTransaction(transaction) {
-            if (!supabase || !isConnected) {
+            if (!supabaseClient || !isConnected) {
                 transactions.unshift(transaction);
                 saveToLocal();
                 updateUI();
@@ -562,7 +528,7 @@
             }
             
             try {
-                const { error } = await supabase
+                const { error } = await supabaseClient
                     .from('transactions')
                     .insert(transaction);
                 
@@ -581,7 +547,7 @@
         }
 
         async function saveSupplier(supplier) {
-            if (!supabase || !isConnected) {
+            if (!supabaseClient || !isConnected) {
                 suppliers.push(supplier);
                 saveToLocal();
                 updateUI();
@@ -589,7 +555,7 @@
             }
             
             try {
-                const { error } = await supabase
+                const { error } = await supabaseClient
                     .from('suppliers')
                     .insert(supplier);
                 
@@ -607,14 +573,14 @@
         }
 
         async function saveReward(identifier, reward) {
-            if (!supabase || !isConnected) {
+            if (!supabaseClient || !isConnected) {
                 buyerRewards[identifier] = reward;
                 saveToLocal();
                 return true;
             }
             
             try {
-                const { error } = await supabase
+                const { error } = await supabaseClient
                     .from('buyer_rewards')
                     .upsert({
                         identifier: identifier,
@@ -638,7 +604,7 @@
         }
 
         async function deleteTransactionFromCloud(id) {
-            if (!supabase || !isConnected) {
+            if (!supabaseClient || !isConnected) {
                 const index = transactions.findIndex(t => t.id === id);
                 if (index !== -1) transactions.splice(index, 1);
                 saveToLocal();
@@ -647,7 +613,7 @@
             }
             
             try {
-                const { error } = await supabase
+                const { error } = await supabaseClient
                     .from('transactions')
                     .delete()
                     .eq('id', id);
@@ -693,7 +659,7 @@
         }
 
         function refreshData() {
-            if (isConnected && supabase) {
+            if (isConnected && supabaseClient) {
                 loadAllData();
             } else {
                 loadFromLocal();
@@ -881,7 +847,7 @@
             transactions.forEach((t) => {
                 const profit = t.harga_jual - t.harga_beli;
                 const supplier = suppliers.find(s => s.id == t.supplier_id);
-                html += `<tr>
+                html += `</tr>
                     <td>${new Date(t.tanggal).toLocaleDateString('id-ID')}</td>
                     <td>${t.nama_pembeli}</td>
                     <td>${t.wa_pembeli || '-'}</td>
